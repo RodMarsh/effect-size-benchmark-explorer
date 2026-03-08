@@ -62,7 +62,7 @@ ui <- bslib::page_sidebar(
   theme = bslib::bs_theme(bootswatch = "flatly", base_font = "system-ui"),
 
   sidebar = bslib::sidebar(
-    width = 280,
+    width = 280, open = "desktop",
     shiny::sliderInput("d_val", "Effect size (d)",
                        min = 0, max = 3, value = 0.1, step = 0.05),
     shiny::selectInput("dist_family", "Distribution family",
@@ -275,6 +275,21 @@ server <- function(input, output, session) {
     # Assign y positions (more spacing for readability)
     row_y <- setNames(seq(0.6, by = 0.8, length.out = n_rows), visible)
 
+    # Build y-axis label lookup (used by scale_y_continuous)
+    label_lookup <- c(
+      cohen  = "Cohen's d",
+      cliff  = if (input$cliff_thresholds == "vd")
+                 "Cliff's \u03b4 (V&D 2000)" else "Cliff's \u03b4 (Romano 2006)",
+      rva    = "Richter RVA",
+      nathan = "Nathan stress score"
+    )
+    y_breaks <- unname(row_y) + 0.25
+    y_labels <- unname(label_lookup[visible])
+
+    # Scale annotation text to plot width (reference = 800 px)
+    plot_w <- session$clientData$output_ruler_plot_width %||% 800
+    txt_scale <- min(1, plot_w / 800)
+
     # Collect all rect data and annotation data
     rect_list <- list()
     ann_list  <- list()
@@ -290,7 +305,7 @@ server <- function(input, output, session) {
                         fontface = "plain", hjust = 0.5, lineheight = 1.0,
                         parse_expr = FALSE) {
       ann_list[[length(ann_list) + 1]] <<- list(
-        x = x, y = y, label = label, size = size, colour = colour,
+        x = x, y = y, label = label, size = size * txt_scale, colour = colour,
         fontface = fontface, hjust = hjust, lineheight = lineheight,
         parse_expr = parse_expr
       )
@@ -307,15 +322,14 @@ server <- function(input, output, session) {
       add_rect( 0.0,  0.2, ylo, yhi, "#d9d9d9")
       add_rect( 0.2,  0.5, ylo, yhi, "#969696")
       add_rect( 0.5,  0.8, ylo, yhi, "#636363")
-      add_ann(0, ymid, "negligible", size = 3.2, colour = "black")
-      add_ann(0.35, ymid, "small", size = 3.2, colour = "white", fontface = "bold")
-      add_ann(-0.35, ymid, "small", size = 3.2, colour = "white", fontface = "bold")
-      add_ann(0.65, ymid, "medium", size = 3.2, colour = "white", fontface = "bold")
-      add_ann(-0.65, ymid, "medium", size = 3.2, colour = "white", fontface = "bold")
-      add_ann(1.05, ymid, "large \u2192", size = 2.8, colour = col_cohen)
-      add_ann(-1.05, ymid, "\u2190 large", size = 2.8, colour = col_cohen)
-      add_ann(-x_max - 0.15, ymid, "bold(Cohen*\"'\"*s~italic(d))",
-              size = 3.5, colour = col_cohen, hjust = 1, parse_expr = TRUE)
+      add_ann(0, ymid, "negl.", size = 2.5, colour = "black")
+      add_ann(0.35, ymid, "small", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(-0.35, ymid, "small", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(0.65, ymid, "med.", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(-0.65, ymid, "med.", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(1.05, ymid, "large \u2192", size = 2.5, colour = col_cohen)
+      add_ann(-1.05, ymid, "\u2190 large", size = 2.5, colour = col_cohen)
+      # row label now rendered via scale_y_continuous
     }
 
     # --- Cliff's delta ---
@@ -338,25 +352,32 @@ server <- function(input, output, session) {
       add_rect(0, csm, ylo, yhi, "#fff5eb")
       add_rect(csm, cmd, ylo, yhi, "#fee6ce")
       add_rect(cmd, clg, ylo, yhi, "#fdae6b")
-      add_ann(0, ymid, sprintf("negl.\n\u03b4 \u2264 %.3g", t_sm), size = 2.5,
-              colour = "#8c510a", lineheight = 0.85)
-      add_ann((csm + cmd) / 2, ymid,
-              sprintf("small\n%.3g\u2013%.2g", t_sm, t_md),
-              size = 2.5, colour = "#8c510a", lineheight = 0.85)
-      add_ann(-(csm + cmd) / 2, ymid,
-              sprintf("small\n%.3g\u2013%.2g", t_sm, t_md),
-              size = 2.5, colour = "#8c510a", lineheight = 0.85)
-      add_ann((cmd + clg) / 2, ymid,
-              sprintf("med.\n%.2g\u2013%.3g", t_md, t_lg),
-              size = 2.5, colour = "#8c510a", lineheight = 0.85)
-      add_ann(-(cmd + clg) / 2, ymid,
-              sprintf("med.\n%.2g\u2013%.3g", t_md, t_lg),
-              size = 2.5, colour = "#8c510a", lineheight = 0.85)
+      add_ann(0, ymid + 0.06, "negl.", size = 2.5, colour = "#8c510a")
+      add_ann(0, ymid - 0.08, sprintf("\u03b4 \u2264 %.3g", t_sm), size = 1.8,
+              colour = "#8c510a")
+      add_ann((csm + cmd) / 2, ymid + 0.06, "small", size = 2.5,
+              colour = "#8c510a")
+      add_ann((csm + cmd) / 2, ymid - 0.08,
+              sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8,
+              colour = "#8c510a")
+      add_ann(-(csm + cmd) / 2, ymid + 0.06, "small", size = 2.5,
+              colour = "#8c510a")
+      add_ann(-(csm + cmd) / 2, ymid - 0.08,
+              sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8,
+              colour = "#8c510a")
+      add_ann((cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5,
+              colour = "#8c510a")
+      add_ann((cmd + clg) / 2, ymid - 0.08,
+              sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8,
+              colour = "#8c510a")
+      add_ann(-(cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5,
+              colour = "#8c510a")
+      add_ann(-(cmd + clg) / 2, ymid - 0.08,
+              sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8,
+              colour = "#8c510a")
       add_ann(1.05, ymid, "large \u2192", size = 2.5, colour = col_cliff)
       add_ann(-1.05, ymid, "\u2190 large", size = 2.5, colour = col_cliff)
-      add_ann(-x_max - 0.15, ymid, cliff_label, size = 3,
-              colour = col_cliff, fontface = "bold", hjust = 1,
-              lineheight = 0.9)
+      # row label now rendered via scale_y_continuous
     }
 
     # --- Richter RVA ---
@@ -367,8 +388,7 @@ server <- function(input, output, session) {
       add_rect(-1.0, 1.0, ylo, yhi, "#b2dfdb")
       add_ann(0, ymid, "within \u00b11 SD natural envelope",
               size = 3.2, colour = "#00695c", fontface = "bold")
-      add_ann(-x_max - 0.15, ymid, "Richter\nRVA", size = 3.5,
-              colour = "#00695c", fontface = "bold", hjust = 1, lineheight = 0.9)
+      # row label now rendered via scale_y_continuous
     }
 
     # --- Nathan stress score ---
@@ -400,9 +420,7 @@ server <- function(input, output, session) {
               colour = "white", fontface = "bold")
       add_ann(-(d_nathan_075 + x_max) / 2, ymid, "High", size = 2.5,
               colour = "white", fontface = "bold")
-      add_ann(-x_max - 0.15, ymid, "Nathan stress\nscore (Vic Gov)",
-              size = 3, colour = "#5d4037", fontface = "bold",
-              hjust = 1, lineheight = 0.9)
+      # row label now rendered via scale_y_continuous
     }
 
     # Build the plot from collected data
@@ -444,18 +462,24 @@ server <- function(input, output, session) {
                         size = 3.5, colour = col_indicator, fontface = "bold",
                         vjust = 0) +
       ggplot2::coord_cartesian(
-        xlim = c(-x_max - 0.85, x_max + 0.15),
+        xlim = c(-x_max - 0.2, x_max + 0.2),
         ylim = c(y_min, y_max + 0.15)
       ) +
       ggplot2::scale_x_continuous(
         name = "Standardised effect size  d",
         breaks = seq(-2.5, 2.5, 0.5)
       ) +
+      ggplot2::scale_y_continuous(
+        breaks = y_breaks,
+        labels = y_labels
+      ) +
       theme_bench +
       ggplot2::theme(
-        axis.text.y        = ggplot2::element_blank(),
         axis.ticks.y       = ggplot2::element_blank(),
         axis.title.y       = ggplot2::element_blank(),
+        axis.text.y        = ggplot2::element_text(
+          face = "bold", size = 10, colour = "grey30"
+        ),
         panel.grid.major.y = ggplot2::element_blank()
       )
 
@@ -484,6 +508,18 @@ server <- function(input, output, session) {
 
     row_y <- setNames(seq(0.6, by = 0.8, length.out = n_rows), visible)
 
+    # Build y-axis label lookup
+    pct_label_lookup <- c(
+      richter_pres = "Richter presumptive",
+      mdb          = "MDB 80%"
+    )
+    pct_y_breaks <- unname(row_y) + 0.25
+    pct_y_labels <- unname(pct_label_lookup[visible])
+
+    # Scale annotation text to plot width (reference = 800 px)
+    pct_w <- session$clientData$output_pct_plot_width %||% 800
+    pct_txt_scale <- min(1, pct_w / 800)
+
     rect_list <- list()
     ann_list  <- list()
 
@@ -497,7 +533,7 @@ server <- function(input, output, session) {
     add_ann <- function(x, y, label, size = 3.0, colour = "black",
                         fontface = "plain", hjust = 0.5, lineheight = 1.0) {
       ann_list[[length(ann_list) + 1]] <<- list(
-        x = x, y = y, label = label, size = size, colour = colour,
+        x = x, y = y, label = label, size = size * pct_txt_scale, colour = colour,
         fontface = fontface, hjust = hjust, lineheight = lineheight
       )
     }
@@ -522,9 +558,7 @@ server <- function(input, output, session) {
               fontface = "bold")
       add_ann(-35, ymid, "exceeds", size = 2.8, colour = "white",
               fontface = "bold")
-      add_ann(-pct_max - pct_margin, ymid, "Richter\npresumptive",
-              size = 3.5, colour = "#283593", fontface = "bold",
-              hjust = 1, lineheight = 0.9)
+      # row label now rendered via scale_y_continuous
     }
 
     # --- MDB 80% (unidirectional) ---
@@ -541,9 +575,7 @@ server <- function(input, output, session) {
               colour = "#c62828", lineheight = 0.85)
       add_ann(25, ymid, "increases (N/A)", size = 2.2,
               colour = "#9e9e9e", fontface = "italic")
-      add_ann(-pct_max - pct_margin, ymid, "MDB 80%",
-              size = 3.5, colour = "#2e7d32", fontface = "bold",
-              hjust = 1, lineheight = 0.9)
+      # row label now rendered via scale_y_continuous
     }
 
     # Build plot
@@ -568,21 +600,27 @@ server <- function(input, output, session) {
     p <- p +
       ggplot2::geom_vline(xintercept = 0, colour = "grey30", linewidth = 0.3) +
       ggplot2::coord_cartesian(
-        xlim = c(-pct_max - pct_margin - 3, pct_max + 2),
+        xlim = c(-pct_max - 2, pct_max + 2),
         ylim = c(y_min, y_max)
       ) +
       ggplot2::scale_x_continuous(
         name = "% change",
         breaks = seq(-50, 50, 10)
       ) +
+      ggplot2::scale_y_continuous(
+        breaks = pct_y_breaks,
+        labels = pct_y_labels
+      ) +
       ggplot2::labs(
         subtitle = "Mean-ratio thresholds (cannot be mapped to d without site-specific CV)"
       ) +
       theme_bench +
       ggplot2::theme(
-        axis.text.y        = ggplot2::element_blank(),
         axis.ticks.y       = ggplot2::element_blank(),
         axis.title.y       = ggplot2::element_blank(),
+        axis.text.y        = ggplot2::element_text(
+          face = "bold", size = 10, colour = "grey30"
+        ),
         panel.grid.major.y = ggplot2::element_blank()
       )
 
