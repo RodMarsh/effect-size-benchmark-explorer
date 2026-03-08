@@ -26,7 +26,7 @@ shiny::runApp("R/shiny_effect_size_benchmarks")
 
 1. **Distributional overlap** — baseline (blue) vs scenario (red) density curves at the selected d, with a subtitle showing d, VDA, δ, and Cohen classification
 2. **Benchmark comparison ruler** — up to five rows showing how the current d maps onto each framework:
-   - **Cohen (d_MAD)** — negligible / small / medium / large
+   - **Cohen's *d*** — negligible / small / medium / large
    - **Cliff's δ** — thresholds from the selected reference (V&D or Romano)
    - **Richter RVA** — ±1 SD natural envelope
    - **Richter presumptive** — 10% and 20% change thresholds scaled by CV
