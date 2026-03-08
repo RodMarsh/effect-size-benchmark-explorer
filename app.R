@@ -73,7 +73,7 @@ ui <- bslib::page_sidebar(
                                     "Romano et al. (2006)" = "romano"),
                         selected = "vd"),
     shiny::checkboxGroupInput("benchmarks", "Show benchmarks (d axis)",
-                              choices = c("Cohen (d_MAD)" = "cohen",
+                              choices = c("Cohen's d" = "cohen",
                                           "Cliff's \u03b4" = "cliff",
                                           "Richter RVA" = "rva",
                                           "Nathan stress score" = "nathan"),
@@ -317,7 +317,7 @@ server <- function(input, output, session) {
       add_ann(-0.65, ymid, "medium", size = 3.2, colour = "white", fontface = "bold")
       add_ann(1.05, ymid, "large \u2192", size = 2.8, colour = col_cohen)
       add_ann(-1.05, ymid, "\u2190 large", size = 2.8, colour = col_cohen)
-      add_ann(-x_max - 0.15, ymid, "bold(Cohen~(italic(d)[MAD]))",
+      add_ann(-x_max - 0.15, ymid, "bold(Cohen*\"'\"*s~italic(d))",
               size = 3.5, colour = col_cohen, hjust = 1, parse_expr = TRUE)
     }
 
