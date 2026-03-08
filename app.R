@@ -16,6 +16,7 @@ library(tibble)
 library(shiny)
 library(bslib)
 library(ggplot2)
+library(dplyr)
 
 # ---- Helper functions ------------------------------------------------------
 
@@ -140,6 +141,15 @@ ui <- bslib::page_sidebar(
 
 server <- function(input, output, session) {
 
+  shiny::observeEvent(input$dist_family, {
+    lbl <- switch(input$dist_family,
+      "Normal"     = "Cohen's d",
+      "Log-normal" = "Log-scale effect size (d)",
+      "Gamma"      = "Standardised shift (d)"
+    )
+    shiny::updateSliderInput(session, "d_val", label = lbl)
+  })
+
   base_size <- 12
 
   theme_bench <- ggplot2::theme_minimal(base_size = base_size) +
@@ -186,58 +196,80 @@ server <- function(input, output, session) {
 
   # Reactive: compute metrics
   metrics <- shiny::reactive({
-    d <- input$d_val
-    family <- input$dist_family
+  dInput <- input$d_val
+  family <- input$dist_family
+  nSim <- 20000
 
-    if (family == "Normal") {
-      vda <- round(vda_from_d(d), 3)
-      cliff <- round(cliff_from_d(d), 3)
+  if (family == "Normal") {
+    vda <- vda_from_d(dInput)
+    cliff <- cliff_from_d(dInput)
+    dEq <- dInput
+  } else {
+    set.seed(42)
+
+    if (family == "Log-normal") {
+      baseline <- rlnorm(nSim, meanlog = 0, sdlog = 1)
+      scenario <- rlnorm(nSim, meanlog = dInput, sdlog = 1)
     } else {
-      set.seed(42)
-      n <- 10000
-      if (family == "Log-normal") {
-        baseline <- rlnorm(n, 0, 1)
-        scenario <- rlnorm(n, d, 1)
-      } else {
-        shape <- 4
-        rate <- 1
-        sd_gamma <- sqrt(shape) / rate
-        baseline <- rgamma(n, shape, rate)
-        scenario <- rgamma(n, shape, rate) + d * sd_gamma
-      }
-      vda <- round(mean(scenario > baseline) + 0.5 * mean(scenario == baseline), 3)
-      cliff <- round(2 * vda - 1, 3)
+      shape <- 4
+      rate <- 1
+      sdGamma <- sqrt(shape) / rate
+      baseline <- rgamma(nSim, shape = shape, rate = rate)
+      scenario <- rgamma(nSim, shape = shape, rate = rate) + dInput * sdGamma
     }
 
-    non_overlap <- round(1 - 2 * pnorm(-d / 2), 3)
+    vda <- mean(scenario > baseline) + 0.5 * mean(scenario == baseline)
+    cliff <- 2 * vda - 1
 
-    nathan_cat <- if (non_overlap < 0.25) "No concern"
-    else if (non_overlap < 0.50) "Some concern"
-    else if (non_overlap < 0.75) "Rel. greater concern"
-    else "High concern"
+    vdaBounded <- pmin(pmax(vda, 1e-6), 1 - 1e-6)
+    dEq <- sqrt(2) * qnorm(vdaBounded)
+  }
 
-    cohen_cat <- if (d < 0.2) "Negligible"
-    else if (d < 0.5) "Small"
-    else if (d < 0.8) "Medium"
-    else "Large"
+  nonOverlapEq <- 2 * pnorm(abs(dEq) / 2) - 1
 
-    cliff_abs <- abs(cliff)
-    if (input$cliff_thresholds == "vd") {
-      cliff_cat <- if (cliff_abs <= 0.11) "Negligible"
-      else if (cliff_abs <= 0.28) "Small"
-      else if (cliff_abs <= 0.43) "Medium"
-      else "Large"
-    } else {
-      cliff_cat <- if (cliff_abs <= 0.147) "Negligible"
-      else if (cliff_abs <= 0.33) "Small"
-      else if (cliff_abs <= 0.474) "Medium"
-      else "Large"
-    }
+  nathanCat <- dplyr::case_when(
+    nonOverlapEq < 0.25 ~ "No concern",
+    nonOverlapEq < 0.50 ~ "Some concern",
+    nonOverlapEq < 0.75 ~ "Rel. greater concern",
+    TRUE ~ "High concern"
+  )
 
-    list(vda = vda, cliff = cliff,
-         non_overlap = non_overlap, nathan_cat = nathan_cat,
-         cohen_cat = cohen_cat, cliff_cat = cliff_cat)
-  })
+  cohenCat <- dplyr::case_when(
+    abs(dEq) < 0.2 ~ "Negligible",
+    abs(dEq) < 0.5 ~ "Small",
+    abs(dEq) < 0.8 ~ "Medium",
+    TRUE ~ "Large"
+  )
+
+  cliffAbs <- abs(cliff)
+
+  cliffCat <- if (input$cliff_thresholds == "vd") {
+    dplyr::case_when(
+      cliffAbs <= 0.11 ~ "Negligible",
+      cliffAbs <= 0.28 ~ "Small",
+      cliffAbs <= 0.43 ~ "Medium",
+      TRUE ~ "Large"
+    )
+  } else {
+    dplyr::case_when(
+      cliffAbs <= 0.147 ~ "Negligible",
+      cliffAbs <= 0.33 ~ "Small",
+      cliffAbs <= 0.474 ~ "Medium",
+      TRUE ~ "Large"
+    )
+  }
+
+  list(
+    dInput = round(dInput, 3),
+    dEq = round(dEq, 3),
+    vda = round(vda, 3),
+    cliff = round(cliff, 3),
+    nonOverlapEq = round(nonOverlapEq, 3),
+    nathanCat = nathanCat,
+    cohenCat = cohenCat,
+    cliffCat = cliffCat
+  )
+})
 
   # Density plot
   output$density_plot <- shiny::renderPlot({
@@ -245,8 +277,13 @@ server <- function(input, output, session) {
     df <- density_data()
     m <- metrics()
 
-    subtitle <- sprintf("d = %.2f  |  VDA = %.3f  |  \u03b4 = %.3f  |  Cohen: %s",
-                        d, m$vda, m$cliff, m$cohen_cat)
+    subtitle <- if (input$dist_family == "Normal") {
+      sprintf("d = %.2f  |  VDA = %.3f  |  \u03b4 = %.3f  |  Cohen: %s",
+              d, m$vda, m$cliff, m$cohenCat)
+    } else {
+      sprintf("input d = %.2f  |  VDA = %.3f  |  \u03b4 = %.3f  |  normal-eq d = %.3f",
+              d, m$vda, m$cliff, m$dEq)
+    }
 
     ggplot2::ggplot(df, ggplot2::aes(x = x, y = density, fill = group)) +
       ggplot2::geom_area(alpha = 0.4, position = "identity", colour = NA) +
@@ -270,11 +307,12 @@ server <- function(input, output, session) {
   # Ruler plot (d axis — distributional benchmarks only)
   output$ruler_plot <- shiny::renderPlot({
     d <- input$d_val
+    m <- metrics()
+    dEq <- m$dEq
     show <- input$benchmarks
 
     x_max <- 2.6
 
-    # Build row positions dynamically based on visible benchmarks
     row_order <- c("nathan", "rva", "cliff", "cohen")
     visible <- row_order[row_order %in% show]
     n_rows <- length(visible)
@@ -287,25 +325,26 @@ server <- function(input, output, session) {
                ggplot2::theme_void())
     }
 
-    # Assign y positions (more spacing for readability)
     row_y <- setNames(seq(0.6, by = 0.8, length.out = n_rows), visible)
 
-    # Build y-axis label lookup (used by scale_y_continuous)
-    label_lookup <- c(
-      cohen  = "Cohen's d",
-      cliff  = if (input$cliff_thresholds == "vd")
-                 "Cliff's \u03b4 (V&D 2000)" else "Cliff's \u03b4 (Romano 2006)",
-      rva    = "Richter RVA",
-      nathan = "Nathan stress score"
-    )
+    cliffLabel <- "Cliff's δ (Romano 2006)"
+      if (input$cliff_thresholds == "vd") {
+        cliffLabel <- "Cliff's δ (V&D 2000)"
+      }
+
+      label_lookup <- c(
+        cohen = "Cohen's d",
+        cliff = cliffLabel,
+        rva = "Richter RVA",
+        nathan = "Nathan stress score"
+      )
     y_breaks <- unname(row_y) + 0.25
     y_labels <- unname(label_lookup[visible])
 
-    # Scale annotation text to plot width (reference = 800 px)
-    plot_w <- session$clientData$output_ruler_plot_width %||% 800
+    plot_w <- session$clientData$output_ruler_plot_width
+    if (is.null(plot_w)) plot_w <- 800
     txt_scale <- min(1, plot_w / 800)
 
-    # Collect all rect data and annotation data
     rect_list <- list()
     ann_list  <- list()
 
@@ -316,21 +355,19 @@ server <- function(input, output, session) {
       )
     }
 
+    # Optimization: Store as data.frame rows for vectorization
     add_ann <- function(x, y, label, size = 3.0, colour = "black",
-                        fontface = "plain", hjust = 0.5, lineheight = 1.0,
-                        parse_expr = FALSE) {
-      ann_list[[length(ann_list) + 1]] <<- list(
+                        fontface = "plain", hjust = 0.5, lineheight = 1.0) {
+      ann_list[[length(ann_list) + 1]] <<- data.frame(
         x = x, y = y, label = label, size = size * txt_scale, colour = colour,
         fontface = fontface, hjust = hjust, lineheight = lineheight,
-        parse_expr = parse_expr
+        stringsAsFactors = FALSE
       )
     }
 
     # --- Cohen ---
     if ("cohen" %in% visible) {
-      ylo <- row_y["cohen"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
+      ylo <- row_y["cohen"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       add_rect(-0.8, -0.5, ylo, yhi, "#636363")
       add_rect(-0.5, -0.2, ylo, yhi, "#969696")
       add_rect(-0.2,  0.0, ylo, yhi, "#d9d9d9")
@@ -344,22 +381,17 @@ server <- function(input, output, session) {
       add_ann(-0.65, ymid, "med.", size = 2.5, colour = "white", fontface = "bold")
       add_ann(1.05, ymid, "large \u2192", size = 2.5, colour = col_cohen)
       add_ann(-1.05, ymid, "\u2190 large", size = 2.5, colour = col_cohen)
-      # row label now rendered via scale_y_continuous
     }
 
     # --- Cliff's delta ---
     if ("cliff" %in% visible) {
-      ylo <- row_y["cliff"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
+      ylo <- row_y["cliff"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       if (input$cliff_thresholds == "vd") {
         csm <- d_cliff_vd_sm; cmd <- d_cliff_vd_md; clg <- d_cliff_vd_lg
         t_sm <- 0.11; t_md <- 0.28; t_lg <- 0.43
-        cliff_label <- "Cliff\u2019s \u03b4\n(V&D 2000)"
       } else {
         csm <- d_cliff_ro_sm; cmd <- d_cliff_ro_md; clg <- d_cliff_ro_lg
         t_sm <- 0.147; t_md <- 0.33; t_lg <- 0.474
-        cliff_label <- "Cliff\u2019s \u03b4\n(Romano 2006)"
       }
       add_rect(-clg, -cmd, ylo, yhi, "#fdae6b")
       add_rect(-cmd, -csm, ylo, yhi, "#fee6ce")
@@ -367,148 +399,94 @@ server <- function(input, output, session) {
       add_rect(0, csm, ylo, yhi, "#fff5eb")
       add_rect(csm, cmd, ylo, yhi, "#fee6ce")
       add_rect(cmd, clg, ylo, yhi, "#fdae6b")
+      
       add_ann(0, ymid + 0.06, "negl.", size = 2.5, colour = "#8c510a")
-      add_ann(0, ymid - 0.08, sprintf("\u03b4 \u2264 %.3g", t_sm), size = 1.8,
-              colour = "#8c510a")
-      add_ann((csm + cmd) / 2, ymid + 0.06, "small", size = 2.5,
-              colour = "#8c510a")
-      add_ann((csm + cmd) / 2, ymid - 0.08,
-              sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8,
-              colour = "#8c510a")
-      add_ann(-(csm + cmd) / 2, ymid + 0.06, "small", size = 2.5,
-              colour = "#8c510a")
-      add_ann(-(csm + cmd) / 2, ymid - 0.08,
-              sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8,
-              colour = "#8c510a")
-      add_ann((cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5,
-              colour = "#8c510a")
-      add_ann((cmd + clg) / 2, ymid - 0.08,
-              sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8,
-              colour = "#8c510a")
-      add_ann(-(cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5,
-              colour = "#8c510a")
-      add_ann(-(cmd + clg) / 2, ymid - 0.08,
-              sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8,
-              colour = "#8c510a")
+      add_ann(0, ymid - 0.08, sprintf("\u03b4 \u2264 %.3g", t_sm), size = 1.8, colour = "#8c510a")
+      add_ann((csm + cmd) / 2, ymid + 0.06, "small", size = 2.5, colour = "#8c510a")
+      add_ann((csm + cmd) / 2, ymid - 0.08, sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8, colour = "#8c510a")
+      add_ann(-(csm + cmd) / 2, ymid + 0.06, "small", size = 2.5, colour = "#8c510a")
+      add_ann(-(csm + cmd) / 2, ymid - 0.08, sprintf("%.3g\u2013%.2g", t_sm, t_md), size = 1.8, colour = "#8c510a")
+      add_ann((cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5, colour = "#8c510a")
+      add_ann((cmd + clg) / 2, ymid - 0.08, sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8, colour = "#8c510a")
+      add_ann(-(cmd + clg) / 2, ymid + 0.06, "med.", size = 2.5, colour = "#8c510a")
+      add_ann(-(cmd + clg) / 2, ymid - 0.08, sprintf("%.2g\u2013%.3g", t_md, t_lg), size = 1.8, colour = "#8c510a")
       add_ann(1.05, ymid, "large \u2192", size = 2.5, colour = col_cliff)
       add_ann(-1.05, ymid, "\u2190 large", size = 2.5, colour = col_cliff)
-      # row label now rendered via scale_y_continuous
     }
 
     # --- Richter RVA ---
     if ("rva" %in% visible) {
-      ylo <- row_y["rva"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
+      ylo <- row_y["rva"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       add_rect(-1.0, 1.0, ylo, yhi, "#b2dfdb")
-      add_ann(0, ymid, "within \u00b11 SD natural envelope",
-              size = 3.2, colour = "#00695c", fontface = "bold")
-      # row label now rendered via scale_y_continuous
+      add_ann(0, ymid, "within \u00b11 SD natural envelope", size = 3.2, colour = "#00695c", fontface = "bold")
     }
 
     # --- Nathan stress score ---
     if ("nathan" %in% visible) {
-      ylo <- row_y["nathan"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
-      # Positive side
+      ylo <- row_y["nathan"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       add_rect(0, d_nathan_025, ylo, yhi, "#e8d5b7")
       add_rect(d_nathan_025, d_nathan_050, ylo, yhi, "#d4a76a")
       add_rect(d_nathan_050, d_nathan_075, ylo, yhi, "#b8763e")
       add_rect(d_nathan_075, x_max, ylo, yhi, "#8b4513")
-      # Negative side
       add_rect(-d_nathan_025, 0, ylo, yhi, "#e8d5b7")
       add_rect(-d_nathan_050, -d_nathan_025, ylo, yhi, "#d4a76a")
       add_rect(-d_nathan_075, -d_nathan_050, ylo, yhi, "#b8763e")
       add_rect(-x_max, -d_nathan_075, ylo, yhi, "#8b4513")
-      add_ann(0, ymid, "No\nconcern", size = 2.5, colour = "#5d4037",
-              lineheight = 0.9)
-      add_ann((d_nathan_025 + d_nathan_050) / 2, ymid, "Some\nconcern",
-              size = 2.5, colour = "white", lineheight = 0.9)
-      add_ann(-(d_nathan_025 + d_nathan_050) / 2, ymid, "Some\nconcern",
-              size = 2.5, colour = "white", lineheight = 0.9)
-      add_ann((d_nathan_050 + d_nathan_075) / 2, ymid, "Rel. greater\nconcern",
-              size = 2.2, colour = "white", lineheight = 0.9)
-      add_ann(-(d_nathan_050 + d_nathan_075) / 2, ymid, "Rel. greater\nconcern",
-              size = 2.2, colour = "white", lineheight = 0.9)
-      add_ann((d_nathan_075 + x_max) / 2, ymid, "High", size = 2.5,
-              colour = "white", fontface = "bold")
-      add_ann(-(d_nathan_075 + x_max) / 2, ymid, "High", size = 2.5,
-              colour = "white", fontface = "bold")
-      # row label now rendered via scale_y_continuous
+      
+      add_ann(0, ymid, "No\nconcern", size = 2.5, colour = "#5d4037", lineheight = 0.9)
+      add_ann((d_nathan_025 + d_nathan_050) / 2, ymid, "Some\nconcern", size = 2.5, colour = "white", lineheight = 0.9)
+      add_ann(-(d_nathan_025 + d_nathan_050) / 2, ymid, "Some\nconcern", size = 2.5, colour = "white", lineheight = 0.9)
+      add_ann((d_nathan_050 + d_nathan_075) / 2, ymid, "Rel. greater\nconcern", size = 2.2, colour = "white", lineheight = 0.9)
+      add_ann(-(d_nathan_050 + d_nathan_075) / 2, ymid, "Rel. greater\nconcern", size = 2.2, colour = "white", lineheight = 0.9)
+      add_ann((d_nathan_075 + x_max) / 2, ymid, "High", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(-(d_nathan_075 + x_max) / 2, ymid, "High", size = 2.5, colour = "white", fontface = "bold")
     }
 
-    # Build the plot from collected data
+    # Build the plot
     rect_df <- do.call(rbind, rect_list)
-    p <- ggplot2::ggplot() +
+    ann_df  <- do.call(rbind, ann_list)
+
+    y_min <- min(row_y) - 0.2
+    y_max <- max(row_y) + 0.8
+
+    ggplot2::ggplot() +
       ggplot2::geom_rect(
         data = rect_df,
         ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
         fill = rect_df$fill, colour = "white", linewidth = 0.4
-      )
-
-    # Add annotations (handle parse separately)
-    for (a in ann_list) {
-      if (isTRUE(a$parse_expr)) {
-        p <- p + ggplot2::annotate("text", x = a$x, y = a$y, label = a$label,
-                                   parse = TRUE, size = a$size, colour = a$colour,
-                                   hjust = a$hjust, lineheight = a$lineheight)
-      } else {
-        p <- p + ggplot2::annotate("text", x = a$x, y = a$y, label = a$label,
-                                   size = a$size, colour = a$colour,
-                                   fontface = a$fontface, hjust = a$hjust,
-                                   lineheight = a$lineheight)
-      }
-    }
-
-    # Y limits
-    y_min <- min(row_y) - 0.2
-    y_max <- max(row_y) + 0.8
-
-    # Indicator line + axes
-    p <- p +
+      ) +
+      # Optimization: Single vectorized text layer
+      ggplot2::geom_text(
+        data = ann_df,
+        ggplot2::aes(x = x, y = y, label = label),
+        colour = ann_df$colour, size = ann_df$size, 
+        fontface = ann_df$fontface, hjust = ann_df$hjust, 
+        lineheight = ann_df$lineheight
+      ) +
       ggplot2::geom_vline(xintercept = 0, colour = "grey30", linewidth = 0.3) +
-      ggplot2::geom_vline(xintercept = d, colour = col_indicator,
-                          linewidth = 1, linetype = "solid", alpha = 0.7) +
-      ggplot2::geom_vline(xintercept = -d, colour = col_indicator,
-                          linewidth = 1, linetype = "dashed", alpha = 0.4) +
-      ggplot2::annotate("text", x = d, y = y_max + 0.05,
-                        label = sprintf("d = %.2f", d),
+      ggplot2::geom_vline(xintercept = dEq, colour = col_indicator, linewidth = 1, linetype = "solid", alpha = 0.7) +
+      ggplot2::geom_vline(xintercept = -dEq, colour = col_indicator, linewidth = 1, linetype = "dashed", alpha = 0.4) +
+      ggplot2::annotate("text", x = dEq, y = y_max + 0.05,
+                        label = sprintf("normal-eq d = %.2f", dEq),
                         size = 3.5, colour = col_indicator, fontface = "bold",
                         vjust = 0) +
-      ggplot2::coord_cartesian(
-        xlim = c(-x_max - 0.2, x_max + 0.2),
-        ylim = c(y_min, y_max + 0.15)
-      ) +
-      ggplot2::scale_x_continuous(
-        name = "Standardised effect size  d",
-        breaks = seq(-2.5, 2.5, 0.5)
-      ) +
-      ggplot2::scale_y_continuous(
-        breaks = y_breaks,
-        labels = y_labels
-      ) +
+      ggplot2::coord_cartesian(xlim = c(-x_max - 0.2, x_max + 0.2), ylim = c(y_min, y_max + 0.15)) +
+      ggplot2::scale_x_continuous(name = "Standardised effect size  d", breaks = seq(-2.5, 2.5, 0.5)) +
+      ggplot2::scale_y_continuous(breaks = y_breaks, labels = y_labels) +
       theme_bench +
       ggplot2::theme(
         axis.ticks.y       = ggplot2::element_blank(),
         axis.title.y       = ggplot2::element_blank(),
-        axis.text.y        = ggplot2::element_text(
-          face = "bold", size = 10, colour = "grey30"
-        ),
+        axis.text.y        = ggplot2::element_text(face = "bold", size = 10, colour = "grey30"),
         panel.grid.major.y = ggplot2::element_blank()
       )
-
-    p
   }, res = 96)
 
   # Percentage-change panel (static — no reactivity needed)
   output$pct_plot <- shiny::renderPlot({
     show_pct <- input$pct_benchmarks
-
     pct_max <- 50
-    pct_margin <- 8
 
-    # Build row positions dynamically
     row_order <- c("mdb", "richter_pres")
     visible <- row_order[row_order %in% show_pct]
     n_rows <- length(visible)
@@ -523,7 +501,6 @@ server <- function(input, output, session) {
 
     row_y <- setNames(seq(0.6, by = 0.8, length.out = n_rows), visible)
 
-    # Build y-axis label lookup
     pct_label_lookup <- c(
       richter_pres = "Richter presumptive",
       mdb          = "MDB 80%"
@@ -531,8 +508,8 @@ server <- function(input, output, session) {
     pct_y_breaks <- unname(row_y) + 0.25
     pct_y_labels <- unname(pct_label_lookup[visible])
 
-    # Scale annotation text to plot width (reference = 800 px)
-    pct_w <- session$clientData$output_pct_plot_width %||% 800
+    pct_w <- session$clientData$output_pct_plot_width
+    if (is.null(pct_w)) pct_w <- 800
     pct_txt_scale <- min(1, pct_w / 800)
 
     rect_list <- list()
@@ -547,122 +524,102 @@ server <- function(input, output, session) {
 
     add_ann <- function(x, y, label, size = 3.0, colour = "black",
                         fontface = "plain", hjust = 0.5, lineheight = 1.0) {
-      ann_list[[length(ann_list) + 1]] <<- list(
+      ann_list[[length(ann_list) + 1]] <<- data.frame(
         x = x, y = y, label = label, size = size * pct_txt_scale, colour = colour,
-        fontface = fontface, hjust = hjust, lineheight = lineheight
+        fontface = fontface, hjust = hjust, lineheight = lineheight,
+        stringsAsFactors = FALSE
       )
     }
 
-    # --- Richter presumptive (bidirectional) ---
+    # --- Richter presumptive ---
     if ("richter_pres" %in% visible) {
-      ylo <- row_y["richter_pres"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
+      ylo <- row_y["richter_pres"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       add_rect(-pct_max, -20, ylo, yhi, "#283593")
       add_rect(20, pct_max, ylo, yhi, "#283593")
       add_rect(-20, -10, ylo, yhi, "#c5cae9")
       add_rect(10, 20, ylo, yhi, "#c5cae9")
       add_rect(-10, 10, ylo, yhi, "#e8eaf6")
-      add_ann(0, ymid, "High\n(<10%)", size = 2.8, colour = "#283593",
-              lineheight = 0.85)
-      add_ann(15, ymid, "Mod.\n(10\u201320%)", size = 2.5,
-              colour = "#283593", lineheight = 0.85)
-      add_ann(-15, ymid, "Mod.\n(10\u201320%)", size = 2.5,
-              colour = "#283593", lineheight = 0.85)
-      add_ann(35, ymid, "exceeds", size = 2.8, colour = "white",
-              fontface = "bold")
-      add_ann(-35, ymid, "exceeds", size = 2.8, colour = "white",
-              fontface = "bold")
-      # row label now rendered via scale_y_continuous
+      add_ann(0, ymid, "High\n(<10%)", size = 2.8, colour = "#283593", lineheight = 0.85)
+      add_ann(15, ymid, "Mod.\n(10\u201320%)", size = 2.5, colour = "#283593", lineheight = 0.85)
+      add_ann(-15, ymid, "Mod.\n(10\u201320%)", size = 2.5, colour = "#283593", lineheight = 0.85)
+      add_ann(35, ymid, "exceeds", size = 2.8, colour = "white", fontface = "bold")
+      add_ann(-35, ymid, "exceeds", size = 2.8, colour = "white", fontface = "bold")
     }
 
-    # --- MDB 80% (unidirectional) ---
+    # --- MDB 80% ---
     if ("mdb" %in% visible) {
-      ylo <- row_y["mdb"]
-      yhi <- ylo + 0.5
-      ymid <- ylo + 0.25
+      ylo <- row_y["mdb"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
       add_rect(-pct_max, -20, ylo, yhi, "#ffcdd2")
       add_rect(-20, 0, ylo, yhi, "#c8e6c9")
       add_rect(0, pct_max, ylo, yhi, "#f5f5f5")
-      add_ann(-10, ymid, "largely\nunmodified\n(>80%)", size = 2.5,
-              colour = "#2e7d32", lineheight = 0.85)
-      add_ann(-35, ymid, "\u2190 modified\n(<80%)", size = 2.5,
-              colour = "#c62828", lineheight = 0.85)
-      add_ann(25, ymid, "increases (N/A)", size = 2.2,
-              colour = "#9e9e9e", fontface = "italic")
-      # row label now rendered via scale_y_continuous
+      add_ann(-10, ymid, "largely\nunmodified\n(>80%)", size = 2.5, colour = "#2e7d32", lineheight = 0.85)
+      add_ann(-35, ymid, "\u2190 modified\n(<80%)", size = 2.5, colour = "#c62828", lineheight = 0.85)
+      add_ann(25, ymid, "increases (N/A)", size = 2.2, colour = "#9e9e9e", fontface = "italic")
     }
 
     # Build plot
     rect_df <- do.call(rbind, rect_list)
-    p <- ggplot2::ggplot() +
-      ggplot2::geom_rect(
-        data = rect_df,
-        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-        fill = rect_df$fill, colour = "white", linewidth = 0.4
-      )
-
-    for (a in ann_list) {
-      p <- p + ggplot2::annotate("text", x = a$x, y = a$y, label = a$label,
-                                 size = a$size, colour = a$colour,
-                                 fontface = a$fontface, hjust = a$hjust,
-                                 lineheight = a$lineheight)
-    }
+    ann_df  <- do.call(rbind, ann_list)
 
     y_min <- min(row_y) - 0.2
     y_max <- max(row_y) + 0.8
 
-    p <- p +
+    ggplot2::ggplot() +
+      ggplot2::geom_rect(
+        data = rect_df,
+        ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        fill = rect_df$fill, colour = "white", linewidth = 0.4
+      ) +
+      # Optimization: Single vectorized text layer
+      ggplot2::geom_text(
+        data = ann_df,
+        ggplot2::aes(x = x, y = y, label = label),
+        colour = ann_df$colour, size = ann_df$size, 
+        fontface = ann_df$fontface, hjust = ann_df$hjust, 
+        lineheight = ann_df$lineheight
+      ) +
       ggplot2::geom_vline(xintercept = 0, colour = "grey30", linewidth = 0.3) +
-      ggplot2::coord_cartesian(
-        xlim = c(-pct_max - 2, pct_max + 2),
-        ylim = c(y_min, y_max)
-      ) +
-      ggplot2::scale_x_continuous(
-        name = "% change",
-        breaks = seq(-50, 50, 10)
-      ) +
-      ggplot2::scale_y_continuous(
-        breaks = pct_y_breaks,
-        labels = pct_y_labels
-      ) +
-      ggplot2::labs(
-        subtitle = "Mean-ratio thresholds (cannot be mapped to d without site-specific CV)"
-      ) +
+      ggplot2::coord_cartesian(xlim = c(-pct_max - 2, pct_max + 2), ylim = c(y_min, y_max)) +
+      ggplot2::scale_x_continuous(name = "% change", breaks = seq(-50, 50, 10)) +
+      ggplot2::scale_y_continuous(breaks = pct_y_breaks, labels = pct_y_labels) +
+      ggplot2::labs(subtitle = "Mean-ratio thresholds (cannot be mapped to d without site-specific CV)") +
       theme_bench +
       ggplot2::theme(
         axis.ticks.y       = ggplot2::element_blank(),
         axis.title.y       = ggplot2::element_blank(),
-        axis.text.y        = ggplot2::element_text(
-          face = "bold", size = 10, colour = "grey30"
-        ),
+        axis.text.y        = ggplot2::element_text(face = "bold", size = 10, colour = "grey30"),
         panel.grid.major.y = ggplot2::element_blank()
       )
-
-    p
   }, res = 96)
 
   # Metrics text
   output$metrics_text <- shiny::renderUI({
-    m <- metrics()
-    d <- input$d_val
-    non_ov <- m$non_overlap
+  m <- metrics()
 
-    shiny::HTML(paste0(
-      "<div style='font-size: 13px; line-height: 1.6;'>",
-      "<strong>Computed metrics</strong><br>",
-      "d = ", sprintf("%.2f", d), "<br>",
-      "VDA = ", sprintf("%.3f", m$vda), "<br>",
-      "\u03b4 (Cliff) = ", sprintf("%.3f", m$cliff), "<br>",
-      "Non-overlap = ", sprintf("%.3f", non_ov), "<br>",
-      "<hr style='margin: 6px 0;'>",
-      "<strong>Classifications</strong><br>",
-      "Cohen: ", m$cohen_cat, "<br>",
-      "Cliff: ", m$cliff_cat, "<br>",
-      "Nathan: ", m$nathan_cat,
-      "</div>"
-    ))
-  })
+  dLabel <- if (input$dist_family == "Normal") {
+    "d"
+  } else if (input$dist_family == "Log-normal") {
+    "log-scale d"
+  } else {
+    "shift-calibrated d"
+  }
+
+  shiny::HTML(paste0(
+    "<div style='font-size: 13px; line-height: 1.6;'>",
+    "<strong>Computed metrics</strong><br>",
+    dLabel, " = ", sprintf("%.2f", m$dInput), "<br>",
+    "VDA = ", sprintf("%.3f", m$vda), "<br>",
+    "\u03b4 (Cliff) = ", sprintf("%.3f", m$cliff), "<br>",
+    "Normal-equivalent d = ", sprintf("%.3f", m$dEq), "<br>",
+    "Normal-equivalent non-overlap = ", sprintf("%.3f", m$nonOverlapEq), "<br>",
+    "<hr style='margin: 6px 0;'>",
+    "<strong>Classifications</strong><br>",
+    "Cohen-equivalent: ", m$cohenCat, "<br>",
+    "Cliff: ", m$cliffCat, "<br>",
+    "Nathan-equivalent: ", m$nathanCat,
+    "</div>"
+  ))
+})
 }
 
 shiny::shinyApp(ui, server)
