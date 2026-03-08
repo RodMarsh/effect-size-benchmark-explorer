@@ -1,3 +1,5 @@
+[![Launch App](https://rodmarsh.github.io/effect-size-benchmark-explorer/) *(Cmd/Ctrl + Click to open in a new tab)*
+
 # Effect-Size Benchmark Explorer
 
 Hydrological alteration and ecological change are both, at base, questions about magnitude relative to a reference regime. In hydrology, the reference regime is the natural envelope of flow variability. In ecology, it is the natural distribution of ecological states. In both cases the central question is not only whether a difference can be detected, but whether the shift is large relative to natural variability — large enough to be ecologically consequential.
