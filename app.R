@@ -102,6 +102,12 @@ ui <- bslib::page_sidebar(
         "<strong>Note on %-change panel</strong><br>Richter presumptive and MDB 80% are ratio thresholds that cannot be mapped to d without site-specific CV. They are shown on a separate axis for reference. Richter originally proposed change from mean daily flow (Richter, 2012). MDB assessments for the Basin Plan considered a ‘largely unmodified flow regime’ to be 'where the modelled end-of-system flow under pre-Basin Plan water sharing arrangements was greater than 80% of without-development flows.' (Swirepik, 2016)"
       )
     ),
+    shiny::tags$p(
+      style = "font-size: 11px; color: #6c757d; line-height: 1.4;",
+      shiny::HTML(
+        "<strong>Note on V&D calibration</strong><br>Vargha & Delaney (2000) deliberately calibrated their Cliff\u2019s \u03b4 thresholds (0.11, 0.28, 0.43) to correspond to Cohen\u2019s d = 0.2, 0.5, 0.8 under normality. The two bars therefore align by design. Romano et al. (2006) proposed alternative thresholds that do not share this alignment."
+      )
+    ),
     hr(),
     tags$a(href = "https://github.com/RodMarsh/effect-size-benchmark-explorer", 
             "View Documentation (README)", 
