@@ -98,12 +98,9 @@ ui <- bslib::page_sidebar(
     ),
     shiny::tags$p(
       style = "font-size: 11px; color: #6c757d; line-height: 1.4;",
-      shiny::HTML(paste0(
-        "<strong>Note on %-change panel</strong><br>",
-        "Richter presumptive and MDB 80% are mean-ratio thresholds that ",
-        "cannot be mapped to d without site-specific CV. ",
-        "They are shown on a separate axis for reference."
-      ))
+      shiny::HTML(
+        "<strong>Note on %-change panel</strong><br>Richter presumptive and MDB 80% are ratio thresholds that cannot be mapped to d without site-specific CV. They are shown on a separate axis for reference. Richter originally proposed change from mean daily flow (Richter, 2012). MDB assessments for the Basin Plan considered a ‘largely unmodified flow regime’ to be 'where the modelled end-of-system flow under pre-Basin Plan water sharing arrangements was greater than 80% of without-development flows.' (Swirepik, 2016)"
+      )
     )
   ),
 
@@ -118,7 +115,7 @@ ui <- bslib::page_sidebar(
       shiny::plotOutput("ruler_plot", height = "400px")
     ),
     bslib::card(
-      bslib::card_header("Percentage-based thresholds (% change in mean flow)"),
+      bslib::card_header("Percentage-based thresholds (% change from baseline)"),
       shiny::plotOutput("pct_plot", height = "200px")
     )
   )
@@ -575,7 +572,7 @@ server <- function(input, output, session) {
         ylim = c(y_min, y_max)
       ) +
       ggplot2::scale_x_continuous(
-        name = "% change in mean flow",
+        name = "% change",
         breaks = seq(-50, 50, 10)
       ) +
       ggplot2::labs(
