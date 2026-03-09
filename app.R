@@ -100,7 +100,7 @@ ui <- bslib::page_sidebar(
     shiny::tags$p(
       style = "font-size: 11px; color: #6c757d; line-height: 1.4;",
       shiny::HTML(
-        "<strong>Note on %-change panel</strong><br>Richter presumptive and MDB 80% are ratio thresholds that cannot be mapped to d without site-specific CV. They are shown on a separate axis for reference. Richter originally proposed change from mean daily flow (Richter, 2012). MDB assessments for the Basin Plan considered a ‘largely unmodified flow regime’ to be 'where the modelled end-of-system flow under pre-Basin Plan water sharing arrangements was greater than 80% of without-development flows.' (Swirepik, 2016)"
+        "<strong>Note on %-change panel</strong><br>Richter presumptive and MDB 80% are ratio thresholds that cannot be mapped to d without site-specific CV. They are shown on a separate axis for reference. Richter originally proposed change from mean daily flow (Richter, 2012). MDB assessments for the Basin Plan considered a 'largely unmodified flow regime' to be 'where the modelled end-of-system flow under pre-Basin Plan water sharing arrangements was greater than 80% of without-development flows.' (Swirepik, 2016) Target values for flow metrics were set as a percentage of without-development modelled flows. Indicator values were assigned the following ratings: 'good'(80-100% of without-development value) 'moderate' (60-80% of without-development value) or 'poor' (<60% of without development value). (MDBA, 2010)" 
       )
     ),
     shiny::tags$p(
