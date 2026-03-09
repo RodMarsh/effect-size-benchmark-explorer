@@ -76,7 +76,7 @@ ui <- bslib::page_sidebar(
     shiny::checkboxGroupInput("benchmarks", "Show benchmarks (d axis)",
                               choices = c("Cohen's d" = "cohen",
                                           "Cliff's \u03b4" = "cliff",
-                                          "Richter RVA" = "rva",
+                                          "Richter RVA (default)" = "rva",
                                           "Nathan stress score" = "nathan"),
                               selected = c("cohen", "cliff", "rva", "nathan")),
     shiny::checkboxGroupInput("pct_benchmarks", "Show benchmarks (% axis)",
@@ -335,7 +335,7 @@ server <- function(input, output, session) {
       label_lookup <- c(
         cohen = "Cohen's d",
         cliff = cliffLabel,
-        rva = "Richter RVA",
+        rva = "Richter RVA (default)",
         nathan = "Nathan stress score"
       )
     y_breaks <- unname(row_y) + 0.25

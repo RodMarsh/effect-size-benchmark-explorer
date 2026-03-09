@@ -61,6 +61,8 @@ Computed values update in real time: d, VDA, Cliff's δ, % change at the selecte
 - Fowler, K., Horne, A., John, A., Nathan, R., Morden, R., Bond, N., Campion, N., 2025. Hydrological analysis to support decision making in Victoria’s unregulated rivers, Unregulated rivers management framework development. University of Melbourne, Melbourne.
 - Swirepik, J.L., Burns, I.C., Dyer, F.J., Neave, I.A., O’Brien, M.G., Pryde, G.M., Thompson, R.M., 2016. Establishing Environmental Water Requirements for the Murray–Darling Basin, Australia’s Largest Developed River System. River Res. Applic. 32, 1153–1165.
 - Murray‐Darling Basin Authority, 2011. The proposed ‘environmentally sustainable level of take’ for surface water of the Murray–Darling Basin:Method and outcomes, MDBA publication. Murray‐Darling Basin Authority, Canberra.
+- MDBA, 2010. *Guide to the proposed Basin Plan: technical background.* Murray-Darling Basin Authority.
+
 
 
 ### Guide to effect sizes in biology
