@@ -81,7 +81,7 @@ ui <- bslib::page_sidebar(
                               selected = c("cohen", "cliff", "rva", "nathan")),
     shiny::checkboxGroupInput("pct_benchmarks", "Show benchmarks (% axis)",
                               choices = c("Richter presumptive" = "richter_pres",
-                                          "MDB 80% (largely unmod.)" = "mdb"),
+                                          "MDB condition" = "mdb"),
                               selected = c("richter_pres", "mdb")),
     hr(),
     shiny::htmlOutput("metrics_text"),
@@ -503,7 +503,7 @@ server <- function(input, output, session) {
 
     pct_label_lookup <- c(
       richter_pres = "Richter presumptive",
-      mdb          = "MDB 80%"
+      mdb          = "MDB condition"
     )
     pct_y_breaks <- unname(row_y) + 0.25
     pct_y_labels <- unname(pct_label_lookup[visible])
@@ -549,11 +549,13 @@ server <- function(input, output, session) {
     # --- MDB 80% ---
     if ("mdb" %in% visible) {
       ylo <- row_y["mdb"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
-      add_rect(-pct_max, -20, ylo, yhi, "#ffcdd2")
+      add_rect(-pct_max, -40, ylo, yhi, "#ffcdd2")
+      add_rect(-40, -20, ylo, yhi, "#ffe0b2")
       add_rect(-20, 0, ylo, yhi, "#c8e6c9")
       add_rect(0, pct_max, ylo, yhi, "#f5f5f5")
-      add_ann(-10, ymid, "largely\nunmodified\n(>80%)", size = 2.5, colour = "#2e7d32", lineheight = 0.85)
-      add_ann(-35, ymid, "\u2190 modified\n(<80%)", size = 2.5, colour = "#c62828", lineheight = 0.85)
+      add_ann(-10, ymid, "Good\n'largely unmod.'\n(>80%)", size = 2.3, colour = "#2e7d32", lineheight = 0.85)
+      add_ann(-30, ymid, "Moderate\n(60\u201380%)", size = 2.3, colour = "#e65100", lineheight = 0.85)
+      add_ann(-47, ymid, "Poor\n(<60%)", size = 2.3, colour = "#c62828", lineheight = 0.85)
       add_ann(25, ymid, "increases (N/A)", size = 2.2, colour = "#9e9e9e", fontface = "italic")
     }
 
