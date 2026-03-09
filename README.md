@@ -4,6 +4,8 @@
 
 Hydrological alteration and ecological change are both, at base, questions about magnitude relative to a reference regime. In hydrology, the reference regime is the natural envelope of flow variability. In ecology, it is the natural distribution of ecological states. In both cases the central question is not only whether a difference can be detected, but whether the shift is large relative to natural variability — large enough to be ecologically consequential.
 
+When expressed on a common effect-size scale, the different frameworks reveal markedly different implicit tolerances for hydrological change. In behavioural sciences, Cohen’s benchmarks treat relatively small distribution shifts as meaningful, with “large” effects beginning around $d \approx 0.8$. Non-parametric thresholds based on Cliff’s δ align closely with this interpretation. By contrast, ecohydrological frameworks are calibrated to much greater natural variability. The default Richter RVA target allows indicator values to vary within roughly one natural standard deviation ($|d| \le 1$), while the Nathan stress-score framework does not indicate ecological concern until distribution overlap has already declined substantially (approximately$ d \gtrsim 0.6$), with higher stress categories corresponding to very large separations. Viewed together, these benchmarks illustrate that hydrological assessment frameworks implicitly tolerate much larger statistical shifts than are typically considered meaningful in many other empirical disciplines, reflecting the inherently high variability of river systems and the expectation that ecological communities are adapted to that variability.
+
 This is an interactive Shiny app for comparing Cohen's generic effect-size benchmarks against ecohydrology-specific thresholds in the literature. Designed as an instructional tool to help users understand how different benchmark frameworks classify the same standardised effect size.
 
 ## Running the app
@@ -30,7 +32,7 @@ shiny::runApp("R/shiny_effect_size_benchmarks")
 2. **Benchmark comparison ruler** — up to five rows showing how the current d maps onto each framework:
    - **Cohen's *d*** — negligible / small / medium / large
    - **Cliff's δ** — thresholds from the selected reference (V&D or Romano)
-   - **Richter RVA** — ±1 SD natural envelope
+   - **Richter RVA (default)** — ±1 SD natural envelope
    - **Richter presumptive** — 10% and 20% change thresholds scaled by CV
    - **Nathan stress score (Vic Gov)** — no concern / some concern / relatively greater concern / high concern
 
