@@ -50,6 +50,7 @@ Computed values update in real time: d, VDA, Cliff's δ, % change at the selecte
 
 ### Effect-size frameworks
 - Cohen, J. (1988). *Statistical Power Analysis for the Behavioral Sciences*. 2nd ed. Lawrence Erlbaum.
+- Cliff, N., 1993. Dominance statistics: Ordinal analyses to answer ordinal questions. Psychological bulletin 114, 494.
 - Vargha, A. & Delaney, H.D. (2000). A critique and improvement of the CL common language effect size statistics of McGraw and Wong. *Journal of Educational and Behavioral Statistics*, 25(2), 101–132.
 - Romano, J., Kromrey, J.D., Coraggio, J. & Skowronek, J. (2006). Exploring methods for evaluating group differences on the NSSE and other surveys: Are the t-test and Cohen's d indices the most appropriate choices? *Annual Meeting of the Southern Association for Institutional Research*.
 
