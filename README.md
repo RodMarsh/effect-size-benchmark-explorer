@@ -64,6 +64,9 @@ Computed values update in real time: d, VDA, Cliff's δ, % change at the selecte
 - Swirepik, J.L., Burns, I.C., Dyer, F.J., Neave, I.A., O’Brien, M.G., Pryde, G.M., Thompson, R.M., 2016. Establishing Environmental Water Requirements for the Murray–Darling Basin, Australia’s Largest Developed River System. River Res. Applic. 32, 1153–1165.
 - Murray‐Darling Basin Authority, 2011. The proposed ‘environmentally sustainable level of take’ for surface water of the Murray–Darling Basin:Method and outcomes, MDBA publication. Murray‐Darling Basin Authority, Canberra.
 - MDBA, 2010. *Guide to the proposed Basin Plan: technical background.* Murray-Darling Basin Authority.
+- Guarino F and Sengupta A. 2023. Basin-scale evaluation of 2021–22 Commonwealth environmental water: Hydrology. Flow-MER
+Program. Commonwealth Environmental Water Holder, Department of Climate Change, Energy, the Environment and Water.
+- NSW DPIE. 2023. River condition index: method report. NSW Department of Planning and Environment.
 
 
 

@@ -81,8 +81,9 @@ ui <- bslib::page_sidebar(
                               selected = c("cohen", "cliff", "rva", "nathan")),
     shiny::checkboxGroupInput("pct_benchmarks", "Show benchmarks (% axis)",
                               choices = c("Richter presumptive" = "richter_pres",
-                                          "MDB condition" = "mdb"),
-                              selected = c("richter_pres", "mdb")),
+                                          "MDB condition" = "mdb",
+                                          "NSW Hydrol. Stress Index" = "nsw_hsi"),
+                              selected = c("richter_pres", "mdb", "nsw_hsi")),
     hr(),
     shiny::htmlOutput("metrics_text"),
     hr(),
@@ -487,7 +488,7 @@ server <- function(input, output, session) {
     show_pct <- input$pct_benchmarks
     pct_max <- 50
 
-    row_order <- c("mdb", "richter_pres")
+    row_order <- c("mdb", "nsw_hsi", "richter_pres")
     visible <- row_order[row_order %in% show_pct]
     n_rows <- length(visible)
 
@@ -503,6 +504,7 @@ server <- function(input, output, session) {
 
     pct_label_lookup <- c(
       richter_pres = "Richter presumptive",
+      nsw_hsi      = "NSW Hydrol. Stress Index",
       mdb          = "MDB condition"
     )
     pct_y_breaks <- unname(row_y) + 0.25
@@ -559,6 +561,22 @@ server <- function(input, output, session) {
       add_ann(25, ymid, "increases (N/A)", size = 2.2, colour = "#9e9e9e", fontface = "italic")
     }
 
+    # --- NSW Hydrological Stress Index ---
+    if ("nsw_hsi" %in% visible) {
+      ylo <- row_y["nsw_hsi"]; yhi <- ylo + 0.5; ymid <- ylo + 0.25
+      add_rect(-pct_max, -40, ylo, yhi, "#00695c")
+      add_rect(-40, -20, ylo, yhi, "#00897b")
+      add_rect(-20, 0, ylo, yhi, "#80cbc4")
+      add_rect(0, 20, ylo, yhi, "#80cbc4")
+      add_rect(20, 40, ylo, yhi, "#00897b")
+      add_rect(40, pct_max, ylo, yhi, "#00695c")
+      add_ann(0, ymid, "Very Good\n(<20%)", size = 2.5, colour = "#004d40", lineheight = 0.85)
+      add_ann(30, ymid, "Good\n(20\u201340%)", size = 2.5, colour = "white", lineheight = 0.85)
+      add_ann(-30, ymid, "Good\n(20\u201340%)", size = 2.5, colour = "white", lineheight = 0.85)
+      add_ann(45, ymid, "Mod.", size = 2.5, colour = "white", fontface = "bold")
+      add_ann(-45, ymid, "Mod.", size = 2.5, colour = "white", fontface = "bold")
+    }
+
     # Build plot
     rect_df <- do.call(rbind, rect_list)
     ann_df  <- do.call(rbind, ann_list)
@@ -576,8 +594,8 @@ server <- function(input, output, session) {
       ggplot2::geom_text(
         data = ann_df,
         ggplot2::aes(x = x, y = y, label = label),
-        colour = ann_df$colour, size = ann_df$size, 
-        fontface = ann_df$fontface, hjust = ann_df$hjust, 
+        colour = ann_df$colour, size = ann_df$size,
+        fontface = ann_df$fontface, hjust = ann_df$hjust,
         lineheight = ann_df$lineheight
       ) +
       ggplot2::geom_vline(xintercept = 0, colour = "grey30", linewidth = 0.3) +
