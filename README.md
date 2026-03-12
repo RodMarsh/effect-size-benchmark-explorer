@@ -27,7 +27,6 @@ shiny::runApp("R/shiny_effect_size_benchmarks")
 ### Controls
 
 - **Effect size (d)** — slider (0–3) sets the separation between baseline and scenario distributions
-- **Coefficient of variation (CV)** — slider (0.2–2.0) controls how Richter presumptive thresholds map to d (d = %Δ / CV)
 - **Distribution family** — Normal, Log-normal, or Gamma; switches the density curves and recalculates empirical VDA/Cliff's δ for non-normal families
 - **Cliff's δ thresholds** — toggle between Vargha & Delaney (2000): 0.11 / 0.28 / 0.43 and Romano et al. (2006): 0.147 / 0.33 / 0.474
 - **Benchmark toggles** — show/hide individual benchmark rows
