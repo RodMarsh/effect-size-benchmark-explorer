@@ -94,14 +94,9 @@ ui <- bslib::page_sidebar(
     hr(),
     shiny::tags$p(
       style = "font-size: 11px; color: #6c757d; line-height: 1.4;",
-      shiny::HTML(paste0(
-        "<strong>Note on normality</strong><br>",
-        "Density curves and benchmark\u2013d mappings assume normality for illustration. ",
-        "Cliff\u2019s \u03b4 (the primary AROWS metric) is fully nonparametric ",
-        "and does not assume any distributional form. ",
-        "Switch to log-normal or gamma above to see how non-normality ",
-        "affects overlap and metric values."
-      ))
+      shiny::HTML(
+        "<strong>Note on normality</strong><br>Density curves and benchmark\u2013d mappings assume normality for illustration. Cliff\u2019s \u03b4 (the primary AROWS metric) is fully nonparametric and does not assume any distributional form. Switch to log-normal or gamma above to see how non-normality affects overlap and metric values. The Nathan stress score benchmarks shown are those proposed in Fowler et al.\u2019s 2025 advice to support Victorian Government decision making. Nathan et al.\u2019s original 2019 suggested benchmarks are similar (e.g. low stress in the range \u00b10.3 and medium stress in the range \u00b10.7)."
+      )
     ),
     shiny::tags$p(
       style = "font-size: 11px; color: #6c757d; line-height: 1.4;",
