@@ -1,12 +1,18 @@
 [![Launch App](https://img.shields.io/badge/Launch-app-blue?style=for-the-badge&logo=R)](https://rodmarsh.github.io/effect-size-benchmark-explorer/) *(Cmd/Ctrl + Click to open in a new tab)*
 
-# Effect-Size Benchmark Explorer
+This is an interactive Shiny app for comparing Cohen's generic effect-size benchmarks against ecohydrology-specific thresholds from the literature and benchmarks used in Australian jurisdictions. Designed as tool to help users compare how different benchmark frameworks classify the same standardised effect size.
 
-Hydrological alteration and ecological change are both, at base, questions about magnitude relative to a reference regime. In hydrology, the reference regime is the natural envelope of flow variability. In ecology, it is the natural distribution of ecological states. In both cases the central question is not only whether a difference can be detected, but whether the shift is large relative to natural variability — large enough to be ecologically consequential.
+# Effect-Size benchmark explorer - rationale
 
-When expressed on a common effect-size scale, the different frameworks reveal markedly different implicit tolerances for hydrological change. In behavioural sciences, Cohen’s benchmarks treat relatively small distribution shifts as meaningful, with “large” effects beginning around $d \approx 0.8$. Non-parametric thresholds based on Cliff’s δ align closely with this interpretation. By contrast, ecohydrological frameworks are calibrated to much greater natural variability. The default Richter RVA target allows indicator values to vary within roughly one natural standard deviation ($|d| \le 1$), while the Nathan stress-score framework does not indicate ecological concern until distribution overlap has already declined substantially (approximately$ d \gtrsim 0.6$), with higher stress categories corresponding to very large separations. Viewed together, these benchmarks illustrate that hydrological assessment frameworks implicitly tolerate much larger statistical shifts than are typically considered meaningful in many other empirical disciplines, reflecting the inherently high variability of river systems and the expectation that ecological communities are adapted to that variability.
+Hydrological alteration and ecological change are both, at base, questions about magnitude relative to a reference regime. In hydrology, the reference regime is usually the natural envelope of flow variability. In ecology, it is the natural distribution of ecological states. In both cases the central question is not only whether a difference can be detected, but whether the shift is large enough to matter.
 
-This is an interactive Shiny app for comparing Cohen's generic effect-size benchmarks against ecohydrology-specific thresholds in the literature. Designed as an instructional tool to help users understand how different benchmark frameworks classify the same standardised effect size.
+Effect sizes address help address these two related questions: if an effect is real, how large is it? And is it large enough to matter practically? They quantify the magnitude of separation between two distributions or conditions, helping distinguish meaningful differences from merely detectable ones. Effect sizes are increasingly recommended as best practice for reporting change in ecology, biology, and hydrology because they speak directly to biological or ecological relevance in a way that *p*-values cannot. As Nakagawa and Cuthill (2007) put it, "all biologists should ultimately be interested in biological importance, which can be assessed from the magnitude of an effect but not from its statistical significance."
+
+The conventional Cohen's *d* benchmarks are widely used as interpretive reference points: values of 0.2, 0.5, and 0.8 correspond roughly to small (one-fifth of a standard deviation), medium (one-half), and large (four-fifths) shifts between conditions. Analogous benchmarks exist for other effect-size measures — Cliff's δ, MAD-scaled effect size, and log response ratio. Cohen himself noted that these benchmarks were somewhat arbitrary and recommended them only in the absence of a better domain-specific basis for interpretation; nonetheless they remain widely used.
+
+An effect size cannot be interpreted in isolation. It requires scientific judgement informed by the study question, the precision of the estimate, the responses being measured, the consequences of those changes, and the condition of the system being studied. Interpreting effect sizes means placing results in context — often asking whether the observed effect is smaller than, larger than, or broadly comparable to effects reported in similar work.
+
+When expressed on a common effect-size scale, a range of different frameworks used to assess hydrological alteration in Australia reveal markedly different implicit tolerances for hydrological change. Cohen’s benchmarks treat relatively small distribution shifts as meaningful, with “large” effects beginning around $d \approx 0.8$. Non-parametric thresholds based on Cliff’s δ align closely with this interpretation. By contrast, ecohydrological frameworks are calibrated to much greater natural variability. The default Richter RVA target allows indicator values to vary within roughly one natural standard deviation ($|d| \le 1$), while the Nathan stress-score framework as used in recent advice to support Victorian Government decision making does not indicate ecological concern until distribution overlap has already declined substantially (approximately $d \gtrsim 0.6$), with higher stress categories corresponding to very large separations. Viewed together, these benchmarks illustrate that hydrological assessment frameworks implicitly tolerate much larger statistical shifts than are typically considered meaningful in many other empirical disciplines, reflecting the inherently high variability of river systems and the expectation that ecological communities are adapted to that variability.
 
 ## Running the app
 
@@ -68,12 +74,12 @@ Computed values update in real time: d, VDA, Cliff's δ, % change at the selecte
 Program. Commonwealth Environmental Water Holder, Department of Climate Change, Energy, the Environment and Water.
 - NSW DPIE. 2023. River condition index: method report. NSW Department of Planning and Environment.
 
+### Guide to effect sizes in biology and ecology
 
-
-### Guide to effect sizes in biology
-
-- Nakagawa, S., Cuthill, I.C., 2007. Effect size, confidence interval and statistical significance: a practical guide for biologists. Biological Reviews 82, 591–605. https://doi.org/10.1111/j.1469-185X.2007.00027.x
-
+- Nakagawa, S., Cuthill, I.C., 2007. Effect size, confidence interval and statistical significance: a practical guide for biologists. Biological Reviews 82, 591–605. 
+- Popovic, G., Mason, T.J., Drobniak, S.M., Marques, T.A., Potts, J., Joo, R., Altwegg, R., Burns, C.C.I., McCarthy, M.A., Johnston, A., Nakagawa, S., McMillan, L., Devarajan, K., Taggart, P.L., Wunderlich, A., Mair, M.M., Martínez-Lanfranco, J.A., Lagisz, M., Pottier, P., 2024. Four principles for improved statistical ecology. Methods in Ecology and Evolution 15, 266–281. https://doi.org/10.1111/2041-210X.14270
+- Popovic, G., Mason, T.J., Drobniak, S.M., Marques, T.A., Potts, J., Joo, R., Altwegg, R., Burns, C.C.I., McCarthy, M.A., Johnston, A., Nakagawa, S., McMillan, L., Devarajan, K., Taggart, P.L., Wunderlich, A., Mair, M.M., Martínez-Lanfranco, J.A., Lagisz, M., Pottier, P., 2024. Four principles for improved statistical ecology. Methods in Ecology and Evolution 15, 266–281. https://doi.org/10.1111/2041-210X.14270
+- Methratta, E.T., 2025. Effect size as a measure of biological relevance for offshore wind impact studies. ICES Journal of Marine Science 82, fsaf022. https://doi.org/10.1093/icesjms/fsaf022
 
 ### Cliff's delta in hydrology
 

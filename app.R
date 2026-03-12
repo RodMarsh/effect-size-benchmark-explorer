@@ -64,6 +64,11 @@ ui <- bslib::page_sidebar(
 
   sidebar = bslib::sidebar(
     width = 280, open = "desktop",
+    tags$a(href = "https://github.com/RodMarsh/effect-size-benchmark-explorer",
+           "View Documentation (README)",
+           target = "_blank",
+           style = "font-size: 11px; font-weight: bold; color: #337ab7;"),
+    hr(),
     shiny::sliderInput("d_val", "Effect size (d)",
                        min = 0, max = 3, value = 0.1, step = 0.05),
     shiny::selectInput("dist_family", "Distribution family",
@@ -110,11 +115,6 @@ ui <- bslib::page_sidebar(
         "<strong>Note on V&D calibration</strong><br>Vargha & Delaney (2000) deliberately calibrated their Cliff\u2019s \u03b4 thresholds (0.11, 0.28, 0.43) to correspond to Cohen\u2019s d = 0.2, 0.5, 0.8 under normality. The two bars therefore align by design. Romano et al. (2006) proposed alternative thresholds that do not share this alignment."
       )
     ),
-    hr(),
-    tags$a(href = "https://github.com/RodMarsh/effect-size-benchmark-explorer", 
-            "View Documentation (README)", 
-            target = "_blank", 
-            style = "font-size: 11px; font-weight: bold; color: #337ab7;")
 
     
 
