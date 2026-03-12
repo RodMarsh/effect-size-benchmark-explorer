@@ -65,6 +65,7 @@ Computed values update in real time: d, VDA, Cliff's δ, % change at the selecte
 - Richter, B.D., Baumgartner, J.V., Powell, J. & Braun, D.P. (1996). A method for assessing hydrologic alteration within ecosystems. *Conservation Biology*, 10(4), 1163–1174.
 - Richter, B.D., Baumgartner, J.V., Wigington, R. & Braun, D.P. (1997). How much water does a river need? *Freshwater Biology*, 37(1), 231–249.
 - Richter, B.D., Davis, M.M., Apse, C. & Konrad, C. (2012). A presumptive standard for environmental flow protection. *River Research and Applications*, 28(8), 1312–1321.
+- Nathan, R.J., McMahon, T.A., Peel, M.C., Horne, A., 2019. Assessing the degree of hydrologic stress due to climate change. Climatic Change 156, 87–104.
 - Fowler, K., Horne, A., John, A., Nathan, R., Morden, R., Bond, N., Campion, N., 2025. Hydrological analysis to support decision making in Victoria’s unregulated rivers, Unregulated rivers management framework development. University of Melbourne, Melbourne.
 - Swirepik, J.L., Burns, I.C., Dyer, F.J., Neave, I.A., O’Brien, M.G., Pryde, G.M., Thompson, R.M., 2016. Establishing Environmental Water Requirements for the Murray–Darling Basin, Australia’s Largest Developed River System. River Res. Applic. 32, 1153–1165.
 - Murray‐Darling Basin Authority, 2011. The proposed ‘environmentally sustainable level of take’ for surface water of the Murray–Darling Basin:Method and outcomes, MDBA publication. Murray‐Darling Basin Authority, Canberra.
